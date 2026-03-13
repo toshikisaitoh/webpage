@@ -1,3 +1,3 @@
 # webpage
 Toshiki Saitoh's webpage repository
-Kyushu Institute of Technology
+(Kyushu Institute of Technology)
