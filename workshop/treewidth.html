@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🏨 木幅合宿 お部屋割りガイド</title>
+<style>
+  :root {
+    --pink: #ff6b9d; --yellow: #ffd93d; --green: #6bcb77; --blue: #4d96ff; --purple: #b983ff; --orange: #ff9f43;
+    --ink: #3b3355;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--ink);
+    font-family: "Hiragino Maru Gothic ProN", "Yu Gothic", "Hiragino Sans", sans-serif;
+    background: linear-gradient(135deg, #fff6d6, #ffe0f0 45%, #dcefff);
+    background-attachment: fixed; min-height: 100vh;
+  }
+  header { text-align: center; padding: 40px 16px 10px; }
+  h1 { font-size: clamp(1.8rem, 6vw, 3.2rem); margin: 0; letter-spacing: .05em; }
+  h1 span { display: inline-block; animation: bounce 1.6s ease-in-out infinite; }
+  h1 span:nth-child(2n) { animation-delay: .2s; } h1 span:nth-child(3n) { animation-delay: .4s; }
+  @keyframes bounce { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) rotate(-4deg) } }
+  .sub { margin: 8px 0 0; font-weight: bold; }
+  .date { display: inline-block; margin-top: 10px; background: #fff; border-radius: 999px; padding: 6px 18px; box-shadow: 0 4px 0 rgba(0,0,0,.1); }
+  .search { max-width: 520px; margin: 24px auto 8px; padding: 0 16px; text-align: center; }
+  .search input {
+    width: 100%; font: inherit; font-size: 1.1rem; padding: 14px 20px; border-radius: 999px;
+    border: 4px solid var(--purple); outline: none; background: #fff; text-align: center;
+  }
+  .search input:focus { border-color: var(--pink); }
+  .search small { display: block; margin-top: 6px; opacity: .7; }
+  #result { max-width: 520px; margin: 16px auto 0; padding: 0 16px; }
+  .found {
+    background: #fff; border-radius: 24px; padding: 20px; text-align: center; border: 4px dashed var(--pink);
+    animation: pop .5s cubic-bezier(.2,1.6,.4,1);
+  }
+  .found .big { font-size: 1.6rem; font-weight: bold; margin: 4px 0; }
+  .found .room { font-size: 1.3rem; }
+  @keyframes pop { from { transform: scale(.3); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+  main { max-width: 1100px; margin: 24px auto 60px; padding: 0 16px; display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .card {
+    background: #fff; border-radius: 28px; padding: 20px; border-top: 12px solid var(--c);
+    box-shadow: 0 8px 0 rgba(0,0,0,.08); transition: transform .2s;
+    position: relative;
+  }
+  .card:hover { transform: translateY(-6px) rotate(-1deg); }
+  .card.wide { grid-column: 1 / -1; }
+  .card .icon { font-size: 2.6rem; }
+  .card h2 { margin: 4px 0 2px; font-size: 1.3rem; }
+  .tag { display: inline-block; font-size: .8rem; font-weight: bold; color: #fff; background: var(--c); border-radius: 999px; padding: 2px 12px; }
+  .people { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .person {
+    background: color-mix(in srgb, var(--c) 18%, white); border-radius: 999px; padding: 6px 14px; font-weight: bold;
+    cursor: pointer; border: 2px solid transparent; transition: .15s; font-size: 1rem;
+  }
+  .person:hover { transform: scale(1.12) rotate(3deg); border-color: var(--c); }
+  .person small { font-weight: normal; font-size: .75rem; opacity: .8; }
+  .person.hit { background: var(--yellow); border-color: var(--pink); animation: wiggle .5s 3; }
+  @keyframes wiggle { 25% { transform: rotate(-8deg) scale(1.15) } 75% { transform: rotate(8deg) scale(1.15) } }
+  .card.dim { opacity: .35; }
+  .note { margin-top: 12px; font-size: .85rem; background: #fff8e1; border-radius: 12px; padding: 8px 12px; }
+  .singles { display: grid; gap: 10px; margin-top: 12px; }
+  .single { background: #f4f0ff; border-radius: 16px; padding: 10px 14px; }
+  .single b { display: block; margin-bottom: 4px; }
+  footer { text-align: center; padding-bottom: 40px; font-size: .9rem; opacity: .8; }
+  .confetti { position: fixed; top: -20px; font-size: 1.6rem; pointer-events: none; animation: fall linear forwards; z-index: 99; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title"></h1>
+  <p class="sub">あなたのお部屋はどこかな？ 🔍</p>
+  <span class="date">📅 11月9日（月）〜11日（水）</span>
+</header>
+
+<div class="search">
+  <input id="q" type="search" placeholder="名前を入力してね（例：斎藤）" autocomplete="off">
+  <small>下の名前タグをタップしてもOK！</small>
+</div>
+<div id="result"></div>
+
+<main id="rooms"></main>
+
+<footer>🌙 おやすみ前の夜更かしは ほどほどに 🌙<br>それでは、実りある合宿に！ 🎉</footer>
+
+<script>
+// 参加者（list.txt より）
+const info = {
+  "斎藤": ["九州工業大学", ""], "玉木": ["明治大学", ""], "川原": ["京都大学", ""],
+  "小林": ["北海道大学", ""], "栗田": ["岡山大学", ""], "大舘": ["東京科学大学", ""],
+  "塩田": ["兵庫県立大学", "11日早朝出発"], "田口": ["九州工業大学", ""],
+  "吉仲": ["東北大学", "9〜10日（10日ランチまで）"], "田村": ["東北大学", ""],
+  "高雄": ["九州工業大学", ""], "森元": ["名古屋大学", ""], "鎌田": ["JAIST", ""]
+};
+
+// 部屋割り（room.txt より）
+const rooms = [
+  { icon: "🚭", name: "シングル（禁煙）", tag: "1人部屋 × 2", color: "var(--green)",
+    singles: [
+      { label: "禁煙シングル A", people: ["吉仲"], note: "1泊目のみ（10日ランチまで）" },
+      { label: "禁煙シングル B", people: ["大舘"] },
+    ],
+    note: "🔄 2日目（10日）の夜は、小林さんが吉仲さんのお部屋を使います！", extra: ["小林"], wide: false },
+  { icon: "🚬", name: "シングル（喫煙）", tag: "1人部屋", color: "var(--orange)",
+    people: ["小林"], note: "小林さんは1日目のみ。2日目は禁煙シングルへお引越し 🚚" },
+  { icon: "🛏️", name: "ツインルーム", tag: "2人部屋", color: "var(--pink)", people: ["玉木", "川原"] },
+  { icon: "🎲", name: "4人部屋", tag: "4人部屋", color: "var(--blue)", people: ["栗田", "田村", "斎藤"],
+    note: "※ 3名での利用です。のびのび使えます 🙌" },
+  { icon: "🎉", name: "12人部屋（宴会用の部屋）", tag: "大部屋・宴会場 🍻", color: "var(--purple)", people: ["森元", "高雄", "田口", "塩田", "鎌田"], wide: true,
+    note: "🍻 こちらは<b>宴会用の部屋</b>です！夜は全員ここに集合して語り明かそう 🌌（塩田さんは11日早朝に出発です）" },
+];
+
+// タイトル
+const title = document.getElementById("title");
+title.innerHTML = [..."🏨木幅合宿 お部屋割り🏨"].map(c => `<span>${c === " " ? "&nbsp;" : c}</span>`).join("");
+
+// 描画
+const personHTML = n => `<li class="person" data-name="${n}">${n}<small> さん</small></li>`;
+const container = document.getElementById("rooms");
+rooms.forEach((r, i) => {
+  const card = document.createElement("section");
+  card.className = "card" + (r.wide ? " wide" : "");
+  card.style.setProperty("--c", r.color);
+  card.dataset.idx = i;
+  let body = "";
+  if (r.singles) {
+    body += `<div class="singles">` + r.singles.map(s => `
+      <div class="single"><b>${s.label}</b><ul class="people">${s.people.map(personHTML).join("")}</ul>
+      ${s.note ? `<div class="note">${s.note}</div>` : ""}</div>`).join("") + `</div>`;
+    body += `<div class="note">${r.note}</div><ul class="people">${r.extra.map(personHTML).join("")}</ul>`;
+    r.members = [...r.singles.flatMap(s => s.people), ...r.extra];
+  } else {
+    body += `<ul class="people">${r.people.map(personHTML).join("")}</ul>` + (r.note ? `<div class="note">${r.note}</div>` : "");
+    r.members = r.people;
+  }
+  card.innerHTML = `<div class="icon">${r.icon}</div><h2>${r.name}</h2><span class="tag">${r.tag}</span>${body}`;
+  container.appendChild(card);
+});
+
+// 検索
+const q = document.getElementById("q"), result = document.getElementById("result");
+function search(name) {
+  document.querySelectorAll(".person").forEach(p => p.classList.remove("hit"));
+  document.querySelectorAll(".card").forEach(c => c.classList.remove("dim"));
+  result.innerHTML = "";
+  name = name.trim();
+  if (!name) return;
+  const key = Object.keys(info).find(k => k.includes(name) || name.includes(k));
+  if (!key) { result.innerHTML = `<div class="found">🤔 「${name}」さんは見つかりませんでした</div>`; return; }
+  const mine = rooms.map((r, i) => [r, i]).filter(([r]) => r.members.includes(key));
+  document.querySelectorAll(".card").forEach(c => {
+    if (!mine.some(([, i]) => i == c.dataset.idx)) c.classList.add("dim");
+    else c.querySelectorAll(".person").forEach(p => { if (p.dataset.name === key) p.classList.add("hit"); });
+  });
+  const [univ, memo] = info[key];
+  let lines = mine.map(([r]) => `<div class="room">${r.icon} <b>${r.name}</b></div>`).join("");
+  if (key === "小林") lines = `<div class="room">🌙 1日目：🚬 <b>シングル（喫煙）</b></div><div class="room">🌙 2日目：🚭 <b>シングル（禁煙）</b></div>`;
+  if (key === "吉仲") lines = `<div class="room">🌙 1日目：🚭 <b>シングル（禁煙）</b></div><div class="room">🌅 10日のランチまで！</div>`;
+  result.innerHTML = `<div class="found"><div style="font-size:2.4rem">🎊</div>
+    <div class="big">${key}さん、ようこそ！</div>
+    <small>${univ}${memo ? "／" + memo : ""}</small><div style="margin-top:8px">${lines}</div></div>`;
+  confetti();
+  const first = document.querySelector(".person.hit");
+  if (first) first.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+q.addEventListener("input", () => search(q.value));
+container.addEventListener("click", e => {
+  const p = e.target.closest(".person");
+  if (p) { q.value = p.dataset.name; search(p.dataset.name); window.scrollTo({ top: 0, behavior: "smooth" }); }
+});
+
+// 紙吹雪
+function confetti() {
+  const em = ["🎉", "✨", "⭐", "🎈", "🌟", "🍡", "🎊"];
+  for (let i = 0; i < 28; i++) {
+    const s = document.createElement("span");
+    s.className = "confetti"; s.textContent = em[Math.random() * em.length | 0];
+    s.style.left = Math.random() * 100 + "vw";
+    s.style.animationDuration = 2 + Math.random() * 2 + "s";
+    s.style.animationDelay = Math.random() * .5 + "s";
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 4800);
+  }
+}
+</script>
+</body>
+</html>
