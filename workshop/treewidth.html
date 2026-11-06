@@ -38,14 +38,16 @@
   .found .big { font-size: 1.6rem; font-weight: bold; margin: 4px 0; }
   .found .room { font-size: 1.3rem; }
   @keyframes pop { from { transform: scale(.3); opacity: 0 } to { transform: scale(1); opacity: 1 } }
-  main { max-width: 1100px; margin: 24px auto 60px; padding: 0 16px; display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  main { max-width: 1300px; margin: 24px auto 60px; padding: 0 16px; display: grid; gap: 22px; grid-template-columns: repeat(6, 1fr); }
+  main .card { grid-column: span 2; }
+  main .card.half { grid-column: span 3; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; } main .card, main .card.half { grid-column: auto; } }
   .card {
     background: #fff; border-radius: 28px; padding: 20px; border-top: 12px solid var(--c);
     box-shadow: 0 8px 0 rgba(0,0,0,.08); transition: transform .2s;
     position: relative;
   }
   .card:hover { transform: translateY(-6px) rotate(-1deg); }
-  .card.wide { grid-column: 1 / -1; }
   .card .icon { font-size: 2.6rem; }
   .card h2 { margin: 4px 0 2px; font-size: 1.3rem; }
   .tag { display: inline-block; font-size: .8rem; font-weight: bold; color: #fff; background: var(--c); border-radius: 999px; padding: 2px 12px; }
@@ -106,10 +108,10 @@ const rooms = [
   { icon: "🚬", name: "シングル（喫煙）", tag: "1人部屋", color: "var(--orange)",
     people: ["小林"], note: "小林さんは1日目のみ。2日目は禁煙シングルへお引越し 🚚" },
   { icon: "🛏️", name: "ツインルーム", tag: "2人部屋", color: "var(--pink)", people: ["玉木", "川原"] },
-  { icon: "🎲", name: "4人部屋", tag: "4人部屋", color: "var(--blue)", people: ["栗田", "田村", "斎藤"],
-    note: "※ 3名での利用です。のびのび使えます 🙌" },
+  { icon: "💪", name: "4人部屋（筋トレ用の部屋）", tag: "4人部屋・トレーニング 🏋️", color: "var(--blue)", people: ["栗田", "田村", "斎藤"], wide: true,
+    note: "💪 こちらは<b>筋トレ用の部屋</b>です！合宿の合間に体も鍛えよう 🏋️<br>（3名での利用です）" },
   { icon: "🎉", name: "12人部屋（宴会用の部屋）", tag: "大部屋・宴会場 🍻", color: "var(--purple)", people: ["森元", "高雄", "田口", "塩田", "鎌田"], wide: true,
-    note: "🍻 こちらは<b>宴会用の部屋</b>です！夜は全員ここに集合して語り明かそう 🌌（塩田さんは11日早朝に出発です）" },
+    note: "🍻 こちらは<b>宴会用の部屋</b>です！夜は全員ここに集合して語り明かそう 🌌<br>（塩田さんは11日早朝に出発です）" },
 ];
 
 // タイトル
@@ -121,7 +123,7 @@ const personHTML = n => `<li class="person" data-name="${n}">${n}<small> さん<
 const container = document.getElementById("rooms");
 rooms.forEach((r, i) => {
   const card = document.createElement("section");
-  card.className = "card" + (r.wide ? " wide" : "");
+  card.className = "card" + (r.wide ? " half" : "");
   card.style.setProperty("--c", r.color);
   card.dataset.idx = i;
   let body = "";
